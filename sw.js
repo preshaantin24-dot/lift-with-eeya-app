@@ -1,4 +1,5 @@
-const CACHE_NAME = "lift-with-eeya-v1";
+
+const CACHE_NAME = "lift-with-eeya-v2";
 
 const APP_FILES = [
   "./",
@@ -12,10 +13,12 @@ const APP_FILES = [
 
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_FILES))
+    caches.open(CACHE_NAME).then(async cache => {
+      await Promise.allSettled(
+        APP_FILES.map(file => cache.add(file))
+      );
+    })
   );
-
   self.skipWaiting();
 });
 
@@ -29,19 +32,20 @@ self.addEventListener("activate", event => {
       )
     )
   );
-
   self.clients.claim();
 });
 
 self.addEventListener("fetch", event => {
-
-  if (event.request.method !== "GET") {
+  if (
+    event.request.method !== "GET" ||
+    new URL(event.request.url).origin !== self.location.origin
+  ) {
     return;
   }
 
   event.respondWith(
-    fetch(event.request)
-      .catch(() => caches.match(event.request))
+    fetch(event.request).catch(() =>
+      caches.match(event.request)
+    )
   );
-
 });
